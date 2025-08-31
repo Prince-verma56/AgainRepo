@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-// ================== Dashboard Content ==================
 const DashboardContent = () => {
   const dashboardData = {
     totalRevenue: "₹2,50,000",
@@ -64,7 +63,7 @@ const DashboardContent = () => {
   );
 };
 
-// ================== Create Product Form ==================
+
 const CreateProduct = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -203,7 +202,7 @@ const SellerDashboard2 = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
+      
       <aside
         className={`bg-white shadow-lg border-r flex-shrink-0 ${
           isSidebarExpanded ? "w-64" : "w-20"

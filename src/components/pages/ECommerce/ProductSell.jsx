@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import AllProducts from "./ECommerceContents/AllProducts";
+import { createProduct } from "@/lib/product-api";
 
 // --- Mock shadcn/ui components for a single file ---
 
@@ -184,27 +185,54 @@ const AddProduct = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'images') {
-      setProduct({ ...product, images: [...files] });
+      setProduct({ ...product, images: files });
     } else {
       setProduct({ ...product, [name]: value });
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+    setError('');
 
-    // Simulate an API call
-    console.log("Submitting product:", product);
-    
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Create FormData object for file uploads
+      const formData = new FormData();
+      
+      // Append text fields
+      formData.append('name', product.name);
+      formData.append('price', parseFloat(product.price));
+      formData.append('description', product.description);
+      formData.append('category', product.category);
+      
+      // Append each image file
+      Array.from(product.images).forEach((file, index) => {
+        formData.append('images', file);
+      });
+
+      // Send the request
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include' // Include cookies for authentication
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add product');
+      }
+      
       setMessage('Product added successfully!');
+      
+      // Reset form
       setProduct({
         name: '',
         price: '',
@@ -212,7 +240,17 @@ const AddProduct = () => {
         category: '',
         images: [],
       });
-    }, 2000);
+
+      // Clear file input
+      const fileInput = document.getElementById('images');
+      if (fileInput) fileInput.value = '';
+      
+    } catch (err) {
+      console.error('Error adding product:', err);
+      setError(err.message || 'Failed to add product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -226,8 +264,20 @@ const AddProduct = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="p-3 bg-green-100 text-green-700 rounded-md text-sm">
+                {message}
+              </div>
+            )}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Product Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Product Name
+              </label>
               <input
                 type="text"
                 id="name"
@@ -239,7 +289,9 @@ const AddProduct = () => {
               />
             </div>
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price ($)</label>
+              <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                Price ($)
+              </label>
               <input
                 type="number"
                 id="price"
@@ -247,11 +299,15 @@ const AddProduct = () => {
                 value={product.price}
                 onChange={handleChange}
                 required
+                min="0"
+                step="0.01"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
               />
             </div>
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
               <textarea
                 id="description"
                 name="description"
@@ -263,7 +319,9 @@ const AddProduct = () => {
               ></textarea>
             </div>
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                Category
+              </label>
               <input
                 type="text"
                 id="category"
@@ -275,22 +333,29 @@ const AddProduct = () => {
               />
             </div>
             <div>
-              <label htmlFor="images" className="block text-sm font-medium text-gray-700">Product Images</label>
+              <label htmlFor="images" className="block text-sm font-medium text-gray-700">
+                Product Images
+              </label>
               <input
                 type="file"
                 id="images"
                 name="images"
                 onChange={handleChange}
                 multiple
+                accept="image/*"
                 required
-                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
+                className="mt-1 block w-full text-sm text-gray-500"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Upload one or more images of your product
+              </p>
             </div>
-            {message && (
-              <p className="text-sm font-medium text-green-600">{message}</p>
-            )}
-            <Button type="submit" className="w-full justify-center" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Product'}
+            <Button 
+              type="submit" 
+              className="w-full justify-center" 
+              disabled={loading}
+            >
+              {loading ? 'Adding Product...' : 'Add Product'}
             </Button>
           </form>
         </CardContent>
